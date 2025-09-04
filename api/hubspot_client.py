@@ -1,6 +1,6 @@
 import httpx
 from typing import List, Dict, Any, Optional
-from api.models import HubSpotProperty, PropertyOption, ObjectInfo, PropertyType, FieldType, PropertyValidationRule
+from api.models import HubSpotProperty, PropertyOption, ObjectInfo, PropertyType, FieldType, PropertyValidationRule, AssociationConfiguration
 import logging
 
 logger = logging.getLogger(__name__)
@@ -373,3 +373,72 @@ class HubSpotClient:
             "file": FieldType.FILE
         }
         return field_type_mapping.get(hubspot_field_type.lower(), FieldType.TEXT)
+    
+    async def get_associations(self) -> List[AssociationConfiguration]:
+        """Fetch all association schema definitions for this portal by iterating through object type pairs"""
+        try:
+            # Define object types to check for associations - limiting to core objects to reduce API calls
+            standard_objects = ["contacts", "companies", "deals", "tickets"]
+            
+            # Get custom objects as well - use objectTypeId since that's what the associations API expects
+            objects_data = await self.get_available_objects()
+            custom_objects = [obj.objectTypeId for obj in objects_data.get("custom", []) if obj.objectTypeId]
+            
+            all_objects = standard_objects + custom_objects
+            logger.info(f"Checking associations for {len(all_objects)} object types: {all_objects}")
+            
+            associations = []
+            
+            # Check all combinations of object types
+            for from_obj in all_objects:
+                for to_obj in all_objects:
+                    if from_obj != to_obj:  # Skip self-associations
+                        try:
+                            response = await self.client.get(
+                                f"{self.BASE_URL}/crm/v4/associations/{from_obj}/{to_obj}/labels",
+                                headers=self.headers
+                            )
+                            
+                            if response.status_code == 200:
+                                data = response.json()
+                                
+                                if "results" in data and data["results"]:
+                                    logger.info(f"Found {len(data['results'])} associations from {from_obj} to {to_obj}")
+                                    
+                                    for assoc_data in data["results"]:
+                                        # Add context about the object relationship
+                                        assoc_data["fromObjectType"] = from_obj
+                                        assoc_data["toObjectType"] = to_obj
+                                        
+                                        association = self._parse_association(assoc_data)
+                                        if association:
+                                            associations.append(association)
+                        
+                        except httpx.HTTPError as e:
+                            # 404 is expected when no associations exist between object types
+                            if e.response.status_code != 404:
+                                logger.warning(f"Failed to fetch associations {from_obj} -> {to_obj}: {e}")
+            
+            logger.info(f"Successfully found {len(associations)} total associations across all object pairs")
+            return associations
+            
+        except Exception as e:
+            logger.error(f"Failed to fetch associations: {e}")
+            raise Exception(f"Failed to fetch associations: {str(e)}")
+    
+    def _parse_association(self, assoc_data: Dict[str, Any]) -> Optional[AssociationConfiguration]:
+        """Parse raw HubSpot association data into AssociationConfiguration model"""
+        try:
+            # Handle null labels - leave them as empty string for "unlabeled" associations
+            label = assoc_data.get("label") or ""
+            
+            return AssociationConfiguration(
+                typeId=assoc_data["typeId"],
+                label=label,
+                category=assoc_data.get("category", ""),
+                fromObjectType=assoc_data.get("fromObjectType", ""),
+                toObjectType=assoc_data.get("toObjectType", "")
+            )
+        except Exception as e:
+            logger.warning(f"Failed to parse association: {e} - Data: {assoc_data}")
+            return None

@@ -11,6 +11,7 @@ function initializeApp() {
     const continueSessionBtn = document.getElementById('continueSessionBtn');
     const newTokensBtn = document.getElementById('newTokensBtn');
     const propertyComparisonBtn2 = document.getElementById('propertyComparisonBtn2');
+    const associationsComparisonBtn = document.getElementById('associationsComparisonBtn');
     const existingSessionId = document.getElementById('existingSessionId');
     
     if (tokenForm) {
@@ -34,6 +35,10 @@ function initializeApp() {
     
     if (propertyComparisonBtn2) {
         propertyComparisonBtn2.addEventListener('click', goToPropertyComparison);
+    }
+    
+    if (associationsComparisonBtn) {
+        associationsComparisonBtn.addEventListener('click', goToAssociationsComparison);
     }
     
     // Check if we have a session ID from existing session
@@ -231,6 +236,12 @@ function navigateToCustomObjectMatching() {
 function goToPropertyComparison() {
     if (sessionId) {
         window.location.href = `/property-to-property/${sessionId}`;
+    }
+}
+
+function goToAssociationsComparison() {
+    if (sessionId) {
+        window.location.href = `/compare-associations/${sessionId}`;
     }
 }
 

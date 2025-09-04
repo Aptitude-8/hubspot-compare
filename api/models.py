@@ -112,3 +112,28 @@ class ComparisonResult(BaseModel):
     only_in_a_count: int
     only_in_b_count: int
     comparisons: List[PropertyComparison] = []
+
+# Association models for HubSpot associations comparison
+class AssociationConfiguration(BaseModel):
+    typeId: int
+    label: Optional[str] = None  # Some associations have null labels
+    category: str
+    fromObjectType: str
+    toObjectType: str
+    # Note: userEnforcedMaxToObjectIds may not be available in labels endpoint
+
+class AssociationComparison(BaseModel):
+    association_label: str
+    status: ComparisonStatus
+    association_a: Optional[AssociationConfiguration] = None
+    association_b: Optional[AssociationConfiguration] = None
+    differences: List[PropertyDiff] = []
+
+class AssociationComparisonResult(BaseModel):
+    total_associations_a: int
+    total_associations_b: int
+    identical_count: int
+    different_count: int
+    only_in_a_count: int
+    only_in_b_count: int
+    comparisons: List[AssociationComparison] = []

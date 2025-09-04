@@ -4,7 +4,10 @@ from api.models import (
     PropertyComparison, 
     ComparisonResult, 
     ComparisonStatus,
-    PropertyDiff
+    PropertyDiff,
+    AssociationConfiguration,
+    AssociationComparison,
+    AssociationComparisonResult
 )
 import logging
 
@@ -342,5 +345,199 @@ class PropertyComparer:
             status=status,
             property_a=prop_a,
             property_b=prop_b,
+            differences=differences
+        )
+    
+    def _normalize_object_type(self, object_type: str, objects_mapping: Dict[str, str] = None) -> str:
+        """Normalize custom object types for comparison using object name mapping"""
+        if object_type.startswith("2-"):
+            # This is a custom object - use mapping if provided, otherwise use the ID
+            if objects_mapping and object_type in objects_mapping:
+                return objects_mapping[object_type]
+            return f"custom_{object_type}"  # Keep ID for unmapped objects
+        return object_type
+    
+    def _build_objects_mapping(self, objects_a: List, objects_b: List) -> Dict[str, str]:
+        """Build mapping from custom object IDs to normalized names for comparison"""
+        mapping = {}
+        
+        # Map Portal A custom objects to their names
+        for obj in objects_a:
+            if hasattr(obj, 'objectTypeId') and obj.objectTypeId and obj.objectTypeId.startswith("2-"):
+                mapping[obj.objectTypeId] = f"custom_{obj.name}"
+        
+        # Map Portal B custom objects to their names  
+        for obj in objects_b:
+            if hasattr(obj, 'objectTypeId') and obj.objectTypeId and obj.objectTypeId.startswith("2-"):
+                mapping[obj.objectTypeId] = f"custom_{obj.name}"
+        
+        return mapping
+    
+    def _create_association_key(self, assoc: AssociationConfiguration, objects_mapping: Dict[str, str] = None) -> str:
+        """Create a comparison key for associations that handles custom objects intelligently"""
+        # For unlabeled associations, use the relationship pattern
+        if not assoc.label:
+            from_normalized = self._normalize_object_type(assoc.fromObjectType, objects_mapping)
+            to_normalized = self._normalize_object_type(assoc.toObjectType, objects_mapping)
+            return f"unlabeled_{from_normalized}_to_{to_normalized}_{assoc.category}"
+        else:
+            # For labeled associations, use the label + normalized relationship
+            from_normalized = self._normalize_object_type(assoc.fromObjectType, objects_mapping)
+            to_normalized = self._normalize_object_type(assoc.toObjectType, objects_mapping)
+            return f"{assoc.label}_{from_normalized}_to_{to_normalized}"
+    
+    def _format_association_display_name(self, assoc: AssociationConfiguration, objects_mapping: Dict[str, str] = None) -> str:
+        """Format association name for display with object name mapping"""
+        # Get human-readable object names
+        from_obj = self._get_display_object_name(assoc.fromObjectType, objects_mapping)
+        to_obj = self._get_display_object_name(assoc.toObjectType, objects_mapping)
+        
+        if assoc.label:
+            return f"{assoc.label} ({from_obj} → {to_obj})"
+        else:
+            return f"Unlabeled ({from_obj} → {to_obj})"
+    
+    def _get_display_object_name(self, object_type: str, objects_mapping: Dict[str, str] = None) -> str:
+        """Get human-readable object name for display"""
+        if object_type.startswith("2-"):
+            # This is a custom object ID - try to get the name
+            if objects_mapping and object_type in objects_mapping:
+                # Remove the "custom_" prefix for cleaner display
+                mapped_name = objects_mapping[object_type]
+                return mapped_name.replace("custom_", "")
+            else:
+                # Fallback to showing the ID
+                return object_type
+        return object_type
+    
+    def compare_associations(self, associations_a: List[AssociationConfiguration], associations_b: List[AssociationConfiguration], objects_a: List = None, objects_b: List = None) -> AssociationComparisonResult:
+        """Compare associations between two portals and return detailed comparison results"""
+        
+        logger.info(f"=== ASSOCIATIONS COMPARISON DEBUG ===")
+        logger.info(f"Portal A associations count: {len(associations_a)}")
+        logger.info(f"Portal B associations count: {len(associations_b)}")
+        
+        if associations_a:
+            logger.info(f"Portal A first few labels: {[assoc.label for assoc in associations_a[:5]]}")
+        if associations_b:
+            logger.info(f"Portal B first few labels: {[assoc.label for assoc in associations_b[:5]]}")
+        
+        # Build objects mapping for intelligent custom object matching
+        objects_mapping = {}
+        if objects_a and objects_b:
+            objects_mapping = self._build_objects_mapping(objects_a, objects_b)
+            logger.info(f"Built objects mapping: {objects_mapping}")
+        
+        # Create lookup dictionaries using smart keys that handle custom objects and unlabeled associations
+        assocs_a_dict = {self._create_association_key(assoc, objects_mapping): assoc for assoc in associations_a}
+        assocs_b_dict = {self._create_association_key(assoc, objects_mapping): assoc for assoc in associations_b}
+        
+        # Get all unique association keys
+        all_association_keys = set(assocs_a_dict.keys()) | set(assocs_b_dict.keys())
+        logger.info(f"Total unique association keys: {len(all_association_keys)}")
+        logger.info(f"First 10 keys: {list(all_association_keys)[:10]}...")
+        
+        comparisons = []
+        counters = {
+            "identical": 0,
+            "different": 0,
+            "only_in_a": 0,
+            "only_in_b": 0
+        }
+        
+        for assoc_key in sorted(all_association_keys):
+            assoc_a = assocs_a_dict.get(assoc_key)
+            assoc_b = assocs_b_dict.get(assoc_key)
+            
+            if assoc_a and assoc_b:
+                # Association exists in both portals - compare them
+                comparison = self._compare_single_association(assoc_a, assoc_b, objects_mapping)
+                if comparison.status == ComparisonStatus.IDENTICAL:
+                    counters["identical"] += 1
+                else:
+                    counters["different"] += 1
+            elif assoc_a and not assoc_b:
+                # Association only exists in portal A
+                comparison = AssociationComparison(
+                    association_label=self._format_association_display_name(assoc_a, objects_mapping),
+                    status=ComparisonStatus.ONLY_IN_A,
+                    association_a=assoc_a,
+                    association_b=None
+                )
+                counters["only_in_a"] += 1
+            else:
+                # Association only exists in portal B
+                comparison = AssociationComparison(
+                    association_label=self._format_association_display_name(assoc_b, objects_mapping),
+                    status=ComparisonStatus.ONLY_IN_B,
+                    association_a=None,
+                    association_b=assoc_b
+                )
+                counters["only_in_b"] += 1
+            
+            comparisons.append(comparison)
+        
+        result = AssociationComparisonResult(
+            total_associations_a=len(associations_a),
+            total_associations_b=len(associations_b),
+            identical_count=counters["identical"],
+            different_count=counters["different"],
+            only_in_a_count=counters["only_in_a"],
+            only_in_b_count=counters["only_in_b"],
+            comparisons=comparisons
+        )
+        
+        logger.info(f"=== COMPARISON RESULT ===")
+        logger.info(f"Total comparisons: {len(comparisons)}")
+        logger.info(f"Identical: {counters['identical']}, Different: {counters['different']}")
+        logger.info(f"Only in A: {counters['only_in_a']}, Only in B: {counters['only_in_b']}")
+        
+        return result
+    
+    def _compare_single_association(self, assoc_a: AssociationConfiguration, assoc_b: AssociationConfiguration, objects_mapping: Dict[str, str] = None) -> AssociationComparison:
+        """Compare two associations with the same label from different portals"""
+        differences = []
+        
+        # Compare category
+        if assoc_a.category != assoc_b.category:
+            differences.append(PropertyDiff(
+                field_name="Category",
+                portal_a_value=assoc_a.category,
+                portal_b_value=assoc_b.category,
+                status=ComparisonStatus.DIFFERENT
+            ))
+        
+        # Compare object type relationship using normalized types
+        from_normalized_a = self._normalize_object_type(assoc_a.fromObjectType, objects_mapping)
+        from_normalized_b = self._normalize_object_type(assoc_b.fromObjectType, objects_mapping)
+        to_normalized_a = self._normalize_object_type(assoc_a.toObjectType, objects_mapping)
+        to_normalized_b = self._normalize_object_type(assoc_b.toObjectType, objects_mapping)
+        
+        if from_normalized_a != from_normalized_b:
+            differences.append(PropertyDiff(
+                field_name="From Object Type",
+                portal_a_value=assoc_a.fromObjectType,
+                portal_b_value=assoc_b.fromObjectType,
+                status=ComparisonStatus.DIFFERENT
+            ))
+            
+        if to_normalized_a != to_normalized_b:
+            differences.append(PropertyDiff(
+                field_name="To Object Type",
+                portal_a_value=assoc_a.toObjectType,
+                portal_b_value=assoc_b.toObjectType,
+                status=ComparisonStatus.DIFFERENT
+            ))
+        
+        # Note: We don't compare typeId since it's expected to differ between environments
+        
+        # Determine overall status
+        status = ComparisonStatus.IDENTICAL if not differences else ComparisonStatus.DIFFERENT
+        
+        return AssociationComparison(
+            association_label=self._format_association_display_name(assoc_a, objects_mapping),
+            status=status,
+            association_a=assoc_a,
+            association_b=assoc_b,
             differences=differences
         )
