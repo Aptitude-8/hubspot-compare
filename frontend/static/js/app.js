@@ -10,7 +10,6 @@ function initializeApp() {
     const tokenForm = document.getElementById('tokenForm');
     const continueSessionBtn = document.getElementById('continueSessionBtn');
     const newTokensBtn = document.getElementById('newTokensBtn');
-    const propertyComparisonBtn = document.getElementById('propertyComparisonBtn');
     const propertyComparisonBtn2 = document.getElementById('propertyComparisonBtn2');
     const existingSessionId = document.getElementById('existingSessionId');
     
@@ -31,10 +30,6 @@ function initializeApp() {
             document.getElementById('tokenSection').style.display = 'block';
             sessionId = null;
         });
-    }
-    
-    if (propertyComparisonBtn) {
-        propertyComparisonBtn.addEventListener('click', goToPropertyComparison);
     }
     
     if (propertyComparisonBtn2) {

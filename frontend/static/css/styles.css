@@ -251,6 +251,63 @@ body {
     font-size: 0.9rem;
 }
 
+/* Scope requirements */
+.scope-requirements {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.scope-requirements h3 {
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+}
+
+.scope-group {
+    background: white;
+    padding: 1rem;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+    margin: 1rem 0;
+}
+
+.scope-group ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.scope-group li {
+    padding: 0.25rem 0;
+}
+
+.scope-group code {
+    background: #f1f3f4;
+    padding: 0.2rem 0.4rem;
+    border-radius: 3px;
+    font-size: 0.9rem;
+    color: #d73502;
+    font-family: 'Monaco', 'Menlo', monospace;
+}
+
+.scope-note {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 4px;
+    padding: 0.75rem;
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    color: #856404;
+}
+
+.scope-note a {
+    color: #856404;
+    text-decoration: underline;
+}
+
 /* Status messages */
 .status-message {
     padding: 1rem;

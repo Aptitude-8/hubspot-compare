@@ -23,9 +23,6 @@
                         <button type="button" class="btn btn-primary" id="continueSessionBtn">
                             Continue with Current Session
                         </button>
-                        <button type="button" class="btn btn-info" id="propertyComparisonBtn">
-                            ⚡ Property-to-Property Comparison
-                        </button>
                         <button type="button" class="btn btn-secondary" id="newTokensBtn">
                             Use Different Tokens
                         </button>
@@ -36,6 +33,23 @@
                 
                 <div id="tokenSection" {% if existing_session %}style="display: none;"{% endif %}>
                     <h2>Portal Authentication</h2>
+                    
+                    <div class="scope-requirements">
+                        <h3>🔑 Required HubSpot Scopes</h3>
+                        <p>Your private app tokens must have the following schema access scopes:</p>
+                        <div class="scope-group">
+                            <ul>
+                                <li><code>crm.schemas.contacts.read</code></li>
+                                <li><code>crm.schemas.companies.read</code></li>
+                                <li><code>crm.schemas.deals.read</code></li>
+                                <li><code>tickets</code> (for tickets schema)</li>
+                                <li><code>crm.objects.products.read</code> (for products schema)</li>
+                                <li><code>crm.schemas.custom.read</code> (for custom objects)</li>
+                            </ul>
+                        </div>
+                        <p class="scope-note"><strong>Note:</strong> Some objects have different scope requirements. Check the <a href="https://developers.hubspot.com/docs/apps/developer-platform/build-apps/authentication/scopes#scopes" target="_blank">HubSpot scopes documentation</a> if you encounter access issues.</p>
+                    </div>
+                    
                     <form id="tokenForm" class="token-form">
                         <div class="token-inputs">
                             <div class="token-group">
