@@ -1,6 +1,6 @@
 # HubSpot Property Comparison Tool
 
-A web application that allows you to compare properties between two HubSpot portals with a visual diff interface.
+A web application that allows you to compare properties and associations between two HubSpot portals with a visual diff interface.
 
 🌐 **Live Demo**: [https://hubspot-compare-38zun.ondigitalocean.app/](https://hubspot-compare-38zun.ondigitalocean.app/)
 
@@ -8,9 +8,10 @@ A web application that allows you to compare properties between two HubSpot port
 
 - **Property Comparison**: Compare properties between two HubSpot portals side-by-side
 - **Property-to-Property Comparison**: Compare specific properties across different object types and portals
+- **Association Comparison**: Compare object associations and relationships between portals
 - **Visual Diff Interface**: Git-diff style visualization with color-coded differences
 - **Standard Objects**: Support for contacts, companies, deals, tickets, products, line items, and more
-- **Custom Objects**: Compare custom object properties with intelligent matching system
+- **Custom Objects**: Compare custom object properties and associations with intelligent matching system
 - **Session Management**: Secure sessions with portal naming and caching
 - **Filtering**: Show only differences, similarities, or properties unique to each portal
 - **Search**: Find specific properties quickly
@@ -99,6 +100,13 @@ For each HubSpot portal you want to compare:
 4. **Filter Results**: Use filters to show only differences, similarities, or portal-specific properties
 5. **Search Properties**: Use the search box to find specific properties quickly
 
+#### Association Comparison
+1. **Access Feature**: Click "🔗 Association Comparison" from the home page
+2. **Select Object Types**: Choose the object types you want to compare associations for
+3. **Review Associations**: View side-by-side comparison of associations between the selected object types
+4. **Intelligent Matching**: Custom object associations are automatically matched by name across portals
+5. **Filter Results**: Use filters to show only differences, similarities, or portal-specific associations
+
 #### Property-to-Property Comparison
 1. **Access Feature**: Click "⚡ Property-to-Property Comparison" from the home page
 2. **Select Source Property**: Choose portal, object type, and specific property
@@ -147,6 +155,10 @@ hubspot-compare/
 - `GET /properties/{session_id}/{object_type}` - Get properties for an object type
 - `GET /compare/{session_id}/{object_type}` - Standard object comparison view
 
+### Association Comparison
+- `GET /associations/{session_id}` - Association comparison interface
+- `GET /compare-associations/{session_id}/{from_object}/{to_object}` - Compare associations between specific object types
+
 ### Property-to-Property Comparison
 - `GET /property-to-property/{session_id}` - Property selection interface
 - `GET /compare-property/{session_id}` - Compare two specific properties
@@ -169,25 +181,33 @@ hubspot-compare/
 - **Option comparison** for enumeration/select fields with detailed option analysis
 - **Validation rule comparison** showing constraints and requirements
 
-#### 2. Property-to-Property Comparison
+#### 2. Association Comparison
+- **Object relationship analysis** - Compare associations between any two object types
+- **Intelligent custom object matching** - Automatically matches custom objects by name across portals
+- **Label and category comparison** - Shows differences in association labels and categories
+- **Visual relationship mapping** - Clear display of association directions and types
+- **Smart normalization** - Handles different custom object IDs between portals
+
+#### 3. Property-to-Property Comparison
 - **Cross-object comparison** - Compare properties between different object types
 - **Cross-portal comparison** - Compare properties within the same portal
 - **Flexible selection** - Choose any property from any available object
 - **Group exclusion** - Property groups are excluded from comparison since they're expected to differ
 
-#### 3. Custom Object Comparison
+#### 4. Custom Object Comparison
 - **Intelligent matching** - Manual pairing of custom objects between portals
 - **ID resolution** - Handles different custom object IDs between portals
 - **Full property analysis** - Same detailed comparison as standard objects
 
 ### Visual Diff Interface
 - **Color-coded differences**:
-  - ✅ Green: Identical properties
-  - ⚠️ Yellow: Different properties
+  - ✅ Green: Identical properties/associations
+  - ⚠️ Yellow: Different properties/associations
   - ← Blue: Only in Portal A
   - → Red: Only in Portal B
 - **Expandable details** showing specific field differences
 - **Property groups** displayed prominently
+- **Association details** showing labels, categories, and object relationships
 - **Clean, readable layout** inspired by git diff tools
 
 ### Session Management & Caching
