@@ -451,7 +451,7 @@ class PropertyComparer:
             
             if assoc_a and assoc_b:
                 # Association exists in both portals - compare them
-                comparison = self._compare_single_association(assoc_a, assoc_b)
+                comparison = self._compare_single_association(assoc_a, assoc_b, objects_mapping)
                 if comparison.status == ComparisonStatus.IDENTICAL:
                     counters["identical"] += 1
                 else:
@@ -459,7 +459,7 @@ class PropertyComparer:
             elif assoc_a and not assoc_b:
                 # Association only exists in portal A
                 comparison = AssociationComparison(
-                    association_label=self._format_association_display_name(assoc_a),
+                    association_label=self._format_association_display_name(assoc_a, objects_mapping),
                     status=ComparisonStatus.ONLY_IN_A,
                     association_a=assoc_a,
                     association_b=None
@@ -468,7 +468,7 @@ class PropertyComparer:
             else:
                 # Association only exists in portal B
                 comparison = AssociationComparison(
-                    association_label=self._format_association_display_name(assoc_b),
+                    association_label=self._format_association_display_name(assoc_b, objects_mapping),
                     status=ComparisonStatus.ONLY_IN_B,
                     association_a=None,
                     association_b=assoc_b
@@ -494,7 +494,7 @@ class PropertyComparer:
         
         return result
     
-    def _compare_single_association(self, assoc_a: AssociationConfiguration, assoc_b: AssociationConfiguration) -> AssociationComparison:
+    def _compare_single_association(self, assoc_a: AssociationConfiguration, assoc_b: AssociationConfiguration, objects_mapping: Dict[str, str] = None) -> AssociationComparison:
         """Compare two associations with the same label from different portals"""
         differences = []
         
@@ -507,8 +507,13 @@ class PropertyComparer:
                 status=ComparisonStatus.DIFFERENT
             ))
         
-        # Compare object type relationship (fromObjectType -> toObjectType)
-        if assoc_a.fromObjectType != assoc_b.fromObjectType:
+        # Compare object type relationship using normalized types
+        from_normalized_a = self._normalize_object_type(assoc_a.fromObjectType, objects_mapping)
+        from_normalized_b = self._normalize_object_type(assoc_b.fromObjectType, objects_mapping)
+        to_normalized_a = self._normalize_object_type(assoc_a.toObjectType, objects_mapping)
+        to_normalized_b = self._normalize_object_type(assoc_b.toObjectType, objects_mapping)
+        
+        if from_normalized_a != from_normalized_b:
             differences.append(PropertyDiff(
                 field_name="From Object Type",
                 portal_a_value=assoc_a.fromObjectType,
@@ -516,7 +521,7 @@ class PropertyComparer:
                 status=ComparisonStatus.DIFFERENT
             ))
             
-        if assoc_a.toObjectType != assoc_b.toObjectType:
+        if to_normalized_a != to_normalized_b:
             differences.append(PropertyDiff(
                 field_name="To Object Type",
                 portal_a_value=assoc_a.toObjectType,
@@ -530,7 +535,7 @@ class PropertyComparer:
         status = ComparisonStatus.IDENTICAL if not differences else ComparisonStatus.DIFFERENT
         
         return AssociationComparison(
-            association_label=self._format_association_display_name(assoc_a),
+            association_label=self._format_association_display_name(assoc_a, objects_mapping),
             status=status,
             association_a=assoc_a,
             association_b=assoc_b,
