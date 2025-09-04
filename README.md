@@ -134,13 +134,16 @@ hubspot-compare/
 │   ├── static/
 │   │   ├── css/
 │   │   │   └── styles.css      # Application styles
-│   │   └── js/
-│   │       └── app.js          # Frontend JavaScript
+│   │   ├── js/
+│   │   │   └── app.js          # Frontend JavaScript
+│   │   └── images/
+│   │       └── aptitude8-logo.png  # Company logo
 │   └── templates/
 │       ├── index.html              # Homepage
 │       ├── comparison.html         # Standard comparison view
 │       ├── property_to_property.html  # Property-to-property comparison
-│       └── custom_object_matching.html # Custom object matching interface
+│       ├── custom_object_matching.html # Custom object matching interface
+│       └── privacy.html            # Privacy and security information
 └── utils/
     ├── __init__.py
     └── helpers.py              # Utility functions
@@ -170,6 +173,7 @@ hubspot-compare/
 ### Utility Endpoints
 - `POST /refresh-cache/{session_id}` - Refresh cached property data
 - `GET /cache-status/{session_id}` - Check cache status
+- `GET /privacy` - Privacy and security information page
 
 ## Features in Detail
 
@@ -230,6 +234,7 @@ hubspot-compare/
 - **Session expiration**: Sessions automatically expire after 1 hour
 - **HTTPS**: Production deployment uses HTTPS encryption
 - **No logging**: Sensitive token data is not logged to prevent exposure
+- **Privacy page**: Detailed information about data handling available at `/privacy`
 
 ## Development
 
@@ -246,6 +251,35 @@ To add support for new HubSpot object types:
 - Modify `frontend/static/css/styles.css` for styling changes
 - Update templates in `frontend/templates/` for layout changes
 - Extend `frontend/static/js/app.js` for additional functionality
+- Add images to `frontend/static/images/` for logos and graphics
+
+## License
+
+This project is licensed under the **Consulting Use License**. 
+
+### What this means:
+- ✅ **Personal use** - You can use this tool for personal projects
+- ✅ **Educational use** - Students and educators can use this for learning
+- ✅ **Non-profit use** - Non-profit organizations can use this tool
+- ✅ **Consulting use** - HubSpot consulting companies can use this tool for client work
+- ✅ **Open source** - You can view, modify, and contribute to the source code
+- ❌ **Productization** - You cannot take this tool and sell it as your own product
+- ❌ **SaaS offerings** - You cannot offer this as a standalone paid service
+- ❌ **White-labeling** - You cannot rebrand and resell this tool
+- ❌ **Direct resale** - You cannot sell or resell this tool directly
+
+### For consulting companies:
+HubSpot consulting companies are welcome to use this tool for their client work, including:
+- Comparing client portals during migrations
+- Auditing client HubSpot configurations
+- Providing analysis and recommendations to clients
+- Using as part of your consulting services
+
+### What's not allowed:
+- Taking this tool and selling it as your own product
+- Offering it as a standalone service to clients
+- White-labeling it with your own branding and selling it
+- Removing attribution and claiming it as your own work
 
 ## Contributing
 
