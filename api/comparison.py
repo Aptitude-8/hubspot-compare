@@ -135,9 +135,14 @@ class PropertyComparer:
         """Compare property options (for enumeration fields)"""
         differences = []
         
+        logger.info(f"Comparing options - A has {len(options_a) if options_a else 0} options, B has {len(options_b) if options_b else 0} options")
+        
         # Convert to dictionaries for easier comparison
         opts_a_dict = {opt.value: opt for opt in options_a} if options_a else {}
         opts_b_dict = {opt.value: opt for opt in options_b} if options_b else {}
+        
+        logger.info(f"Options A keys: {list(opts_a_dict.keys())[:5]}...")  # First 5 keys
+        logger.info(f"Options B keys: {list(opts_b_dict.keys())[:5]}...")  # First 5 keys
         
         all_option_values = set(opts_a_dict.keys()) | set(opts_b_dict.keys())
         
@@ -149,6 +154,7 @@ class PropertyComparer:
             if opt_a and opt_b:
                 # Compare option properties
                 if opt_a.label != opt_b.label:
+                    logger.info(f"Option {opt_value} label diff: '{opt_a.label}' vs '{opt_b.label}'")
                     differences.append(PropertyDiff(
                         field_name=f"Option '{opt_value}' Label",
                         portal_a_value=opt_a.label,
@@ -156,7 +162,11 @@ class PropertyComparer:
                         status=ComparisonStatus.DIFFERENT
                     ))
                 
-                if opt_a.description != opt_b.description:
+                # Normalize None and empty string for description comparison
+                desc_a = opt_a.description or ""
+                desc_b = opt_b.description or ""
+                if desc_a != desc_b:
+                    logger.info(f"Option {opt_value} description diff: '{opt_a.description}' vs '{opt_b.description}'")
                     differences.append(PropertyDiff(
                         field_name=f"Option '{opt_value}' Description",
                         portal_a_value=opt_a.description,
@@ -165,6 +175,7 @@ class PropertyComparer:
                     ))
                 
                 if opt_a.hidden != opt_b.hidden:
+                    logger.info(f"Option {opt_value} hidden diff: '{opt_a.hidden}' vs '{opt_b.hidden}'")
                     differences.append(PropertyDiff(
                         field_name=f"Option '{opt_value}' Hidden",
                         portal_a_value=opt_a.hidden,
@@ -173,6 +184,7 @@ class PropertyComparer:
                     ))
                 
                 if opt_a.displayOrder != opt_b.displayOrder:
+                    logger.info(f"Option {opt_value} displayOrder diff: '{opt_a.displayOrder}' vs '{opt_b.displayOrder}'")
                     differences.append(PropertyDiff(
                         field_name=f"Option '{opt_value}' Display Order",
                         portal_a_value=opt_a.displayOrder,
