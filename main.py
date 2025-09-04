@@ -453,6 +453,99 @@ async def compare_properties(request: Request, session_id: str, object_type: str
         logger.error(f"Failed to compare properties: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to compare properties: {str(e)}")
 
+@app.get("/associations/{session_id}")
+async def get_associations(session_id: str):
+    """Get associations data for both portals"""
+    try:
+        session = get_session(session_id)
+        
+        # Check cache first (using 'associations' as cache key)
+        associations_cache = session["cache"]["properties"].get("associations")
+        if associations_cache and is_cache_valid(associations_cache["timestamp"]):
+            logger.info(f"Using cached associations for session {session_id}")
+            return associations_cache["data"]
+        
+        # Cache miss - fetch fresh data
+        client_a = session["client_a"]
+        client_b = session["client_b"]
+        
+        logger.info(f"Fetching fresh associations data for session {session_id}")
+        associations_a = await client_a.get_associations()
+        associations_b = await client_b.get_associations()
+        
+        result = {
+            "portal_a": associations_a,
+            "portal_b": associations_b
+        }
+        
+        # Update cache
+        session["cache"]["properties"]["associations"] = {
+            "data": result,
+            "timestamp": time.time()
+        }
+        
+        return result
+    
+    except Exception as e:
+        logger.error(f"Failed to get associations: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get associations: {str(e)}")
+
+@app.get("/compare-associations/{session_id}", response_class=HTMLResponse)
+async def compare_associations(request: Request, session_id: str):
+    """Compare associations between two portals"""
+    try:
+        session = get_session(session_id)
+        client_a = session["client_a"]
+        client_b = session["client_b"]
+        portal_a_name = session.get("portal_a_name", "Portal A")
+        portal_b_name = session.get("portal_b_name", "Portal B")
+        
+        # Get associations for both portals
+        associations_a = await client_a.get_associations()
+        associations_b = await client_b.get_associations()
+        
+        # Get objects data for intelligent custom object matching
+        objects_a = await client_a.get_available_objects()
+        objects_b = await client_b.get_available_objects()
+        
+        # Compare associations with object context
+        comparer = PropertyComparer()
+        comparison_result = comparer.compare_associations(
+            associations_a, 
+            associations_b, 
+            objects_a.get("custom", []), 
+            objects_b.get("custom", [])
+        )
+        
+        return templates.TemplateResponse("associations.html", {
+            "request": request,
+            "comparison": comparison_result,
+            "session_id": session_id,
+            "portal_a_name": portal_a_name,
+            "portal_b_name": portal_b_name
+        })
+    
+    except Exception as e:
+        logger.error(f"Failed to compare associations: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to compare associations: {str(e)}")
+
+@app.post("/refresh-associations-cache/{session_id}")
+async def refresh_associations_cache(session_id: str):
+    """Refresh cache specifically for associations"""
+    try:
+        session = get_session(session_id)
+        
+        # Clear associations cache
+        if "associations" in session["cache"]["properties"]:
+            del session["cache"]["properties"]["associations"]
+            logger.info(f"Cleared associations cache for session {session_id}")
+        
+        return {"success": True, "message": "Associations cache refreshed"}
+    
+    except Exception as e:
+        logger.error(f"Failed to refresh associations cache: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to refresh associations cache: {str(e)}")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
