@@ -114,12 +114,38 @@ function displayObjectSelection(data) {
         standardObjectsDiv.appendChild(objectCard);
     });
     
-    // Custom objects from Portal A
+    // Custom objects from both portals (union of all custom objects)
+    const allCustomObjects = new Map();
+    
+    // Add custom objects from Portal A
     if (data.portal_a && data.portal_a.custom) {
         data.portal_a.custom.forEach(obj => {
-            const objectCard = createObjectCard(obj.name, obj.labels?.plural || obj.name, true);
-            customObjectsDiv.appendChild(objectCard);
+            allCustomObjects.set(obj.objectTypeId || obj.name, {
+                name: obj.name,
+                displayName: obj.labels?.plural || obj.name,
+                objectTypeId: obj.objectTypeId
+            });
         });
+    }
+    
+    // Add custom objects from Portal B
+    if (data.portal_b && data.portal_b.custom) {
+        data.portal_b.custom.forEach(obj => {
+            if (!allCustomObjects.has(obj.objectTypeId || obj.name)) {
+                allCustomObjects.set(obj.objectTypeId || obj.name, {
+                    name: obj.name,
+                    displayName: obj.labels?.plural || obj.name,
+                    objectTypeId: obj.objectTypeId
+                });
+            }
+        });
+    }
+    
+    // Display single custom objects card if any exist
+    if (allCustomObjects.size > 0) {
+        const customObjectNames = Array.from(allCustomObjects.values()).map(obj => obj.displayName).join(', ');
+        const customObjectCard = createObjectCard('custom-objects', `Custom Objects (${allCustomObjects.size})`, true);
+        customObjectsDiv.appendChild(customObjectCard);
     }
     
     // Show the object selection section
@@ -144,7 +170,11 @@ function createObjectCard(objectType, displayName, isCustom = false) {
     
     card.addEventListener('click', (e) => {
         e.preventDefault();
-        navigateToComparison(objectType);
+        if (isCustom) {
+            navigateToCustomObjectMatching();
+        } else {
+            navigateToComparison(objectType);
+        }
     });
     
     return card;
@@ -185,6 +215,12 @@ function formatObjectName(objectType) {
         'tasks': 'Tasks'
     };
     return nameMap[objectType] || objectType.charAt(0).toUpperCase() + objectType.slice(1);
+}
+
+function navigateToCustomObjectMatching() {
+    if (sessionId) {
+        window.location.href = `/custom-object-matching/${sessionId}`;
+    }
 }
 
 function showStatus(message, type) {

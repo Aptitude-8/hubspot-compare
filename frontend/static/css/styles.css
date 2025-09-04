@@ -615,6 +615,118 @@ body {
     border-left: 3px solid var(--danger-color);
 }
 
+/* Custom Object Matching */
+.matching-section {
+    background: var(--background-color);
+    padding: 2rem;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 2rem;
+}
+
+.matching-form {
+    margin: 2rem 0;
+}
+
+.object-match-row {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 2rem;
+    align-items: center;
+    padding: 1.5rem;
+    background: var(--light-color);
+    border-radius: var(--radius);
+    margin-bottom: 1rem;
+    border: 2px solid var(--border-color);
+}
+
+.portal-a-object,
+.portal-b-object {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.portal-a-object h4,
+.portal-b-object h4 {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.object-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.object-info strong {
+    font-size: 1.1rem;
+    color: var(--text-color);
+}
+
+.object-info small {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.match-arrow {
+    font-size: 1.5rem;
+    color: var(--primary-color);
+    font-weight: bold;
+}
+
+.object-select {
+    padding: 0.75rem;
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius);
+    font-size: 1rem;
+    background: white;
+    min-width: 250px;
+}
+
+.object-select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+}
+
+.matching-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 2rem;
+}
+
+.matched-objects-section {
+    background: var(--background-color);
+    padding: 2rem;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+}
+
+@media (max-width: 768px) {
+    .object-match-row {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+        text-align: center;
+    }
+    
+    .match-arrow {
+        transform: rotate(90deg);
+    }
+    
+    .matching-actions {
+        flex-direction: column;
+    }
+    
+    .object-select {
+        min-width: 100%;
+    }
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
     .container {

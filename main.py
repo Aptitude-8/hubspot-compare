@@ -179,6 +179,14 @@ async def get_objects(session_id: str):
             "portal_b": objects_b
         }
         
+        # Debug logging for custom objects
+        logger.info(f"Portal A custom objects count: {len(objects_a.get('custom', []))}")
+        logger.info(f"Portal B custom objects count: {len(objects_b.get('custom', []))}")
+        for obj in objects_a.get('custom', []):
+            logger.info(f"Portal A custom object: {obj.name} (ID: {obj.objectTypeId})")
+        for obj in objects_b.get('custom', []):
+            logger.info(f"Portal B custom object: {obj.name} (ID: {obj.objectTypeId})")
+        
         # Update cache
         session["cache"]["objects"] = {
             "data": result,
@@ -275,6 +283,59 @@ async def get_cache_status(session_id: str):
     except Exception as e:
         logger.error(f"Failed to get cache status: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to get cache status: {str(e)}")
+
+@app.get("/custom-object-matching/{session_id}")
+async def custom_object_matching(request: Request, session_id: str):
+    """Show custom object matching interface"""
+    session = get_session(session_id)
+    objects_data = await get_objects(session_id)
+    
+    portal_a_objects = objects_data["portal_a"].get("custom", [])
+    portal_b_objects = objects_data["portal_b"].get("custom", [])
+    
+    # Objects that exist only in Portal B (for display)
+    portal_a_ids = {obj.objectTypeId for obj in portal_a_objects}
+    portal_b_only = [obj for obj in portal_b_objects if obj.objectTypeId not in portal_a_ids]
+    
+    return templates.TemplateResponse("custom_object_matching.html", {
+        "request": request,
+        "session_id": session_id,
+        "portal_a_name": session.get("portal_a_name", "Portal A"),
+        "portal_b_name": session.get("portal_b_name", "Portal B"),
+        "portal_a_objects": portal_a_objects,
+        "portal_b_objects": portal_b_objects,
+        "portal_b_only_objects": portal_b_only
+    })
+
+@app.get("/compare-custom/{session_id}/{portal_a_id}/{portal_b_id}")
+async def compare_custom_objects(request: Request, session_id: str, portal_a_id: str, portal_b_id: str):
+    """Compare properties between matched custom objects"""
+    try:
+        session = get_session(session_id)
+        client_a = session["client_a"]
+        client_b = session["client_b"]
+        
+        # Get properties for both custom objects
+        properties_a = await client_a.get_properties(portal_a_id)
+        properties_b = await client_b.get_properties(portal_b_id)
+        
+        # Compare properties
+        comparer = PropertyComparer()
+        comparison_result = comparer.compare_properties(properties_a, properties_b)
+        comparison_result.object_type = f"Custom Object ({portal_a_id} vs {portal_b_id})"
+        
+        return templates.TemplateResponse("comparison.html", {
+            "request": request,
+            "session_id": session_id,
+            "object_type": comparison_result.object_type,
+            "comparison": comparison_result,
+            "portal_a_name": session.get("portal_a_name", "Portal A"),
+            "portal_b_name": session.get("portal_b_name", "Portal B")
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to compare custom objects: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to compare properties: {str(e)}")
 
 @app.get("/compare/{session_id}/{object_type}", response_class=HTMLResponse)
 async def compare_properties(request: Request, session_id: str, object_type: str):

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom Object Matching</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🔗 Custom Object Matching</h1>
+            <p>Match custom objects between {{ portal_a_name }} and {{ portal_b_name }}</p>
+            <div class="navigation">
+                <a href="/?session_id={{ session_id }}" class="btn btn-secondary">← Back to Home</a>
+            </div>
+        </header>
+
+        <main class="matching-content">
+            <div class="matching-section">
+                <h2>Match Custom Objects</h2>
+                <p>Custom objects have different IDs across portals. Please match objects that represent the same data.</p>
+                
+                <div class="matching-form">
+                    {% for obj_a in portal_a_objects %}
+                    <div class="object-match-row">
+                        <div class="portal-a-object">
+                            <h4>{{ portal_a_name }}</h4>
+                            <div class="object-info">
+                                <strong>{{ obj_a.labels.plural or obj_a.name }}</strong>
+                                <small>{{ obj_a.name }} ({{ obj_a.objectTypeId }})</small>
+                            </div>
+                        </div>
+                        
+                        <div class="match-arrow">⟷</div>
+                        
+                        <div class="portal-b-object">
+                            <h4>{{ portal_b_name }}</h4>
+                            <select name="match_{{ obj_a.objectTypeId }}" class="object-select">
+                                <option value="">-- Select matching object --</option>
+                                {% for obj_b in portal_b_objects %}
+                                <option value="{{ obj_b.objectTypeId }}">
+                                    {{ obj_b.labels.plural or obj_b.name }} ({{ obj_b.name }})
+                                </option>
+                                {% endfor %}
+                                <option value="none">No matching object</option>
+                            </select>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    
+                    {% for obj_b in portal_b_only_objects %}
+                    <div class="object-match-row">
+                        <div class="portal-a-object">
+                            <h4>{{ portal_a_name }}</h4>
+                            <div class="object-info">
+                                <em>No matching object</em>
+                            </div>
+                        </div>
+                        
+                        <div class="match-arrow">⟷</div>
+                        
+                        <div class="portal-b-object">
+                            <h4>{{ portal_b_name }}</h4>
+                            <div class="object-info">
+                                <strong>{{ obj_b.labels.plural or obj_b.name }}</strong>
+                                <small>{{ obj_b.name }} ({{ obj_b.objectTypeId }})</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <div class="matching-actions">
+                    <button type="button" class="btn btn-primary" id="saveMatching">Save Matching & Continue</button>
+                    <button type="button" class="btn btn-secondary" id="autoMatch">Auto-Match by Name</button>
+                </div>
+            </div>
+
+            <div class="matched-objects-section" id="matchedObjectsSection" style="display: none;">
+                <h2>Available Comparisons</h2>
+                <div class="object-grid" id="matchedObjectsGrid">
+                    <!-- Matched objects will be populated here -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const SESSION_ID = '{{ session_id }}';
+        let objectMatching = {};
+
+        document.getElementById('autoMatch').addEventListener('click', autoMatchObjects);
+        document.getElementById('saveMatching').addEventListener('click', saveMatching);
+
+        function autoMatchObjects() {
+            const selects = document.querySelectorAll('.object-select');
+            selects.forEach(select => {
+                const portalAId = select.name.replace('match_', '');
+                const portalARow = select.closest('.object-match-row');
+                const portalAName = portalARow.querySelector('.portal-a-object strong').textContent.toLowerCase();
+                
+                // Try to find a matching option by name similarity
+                for (let option of select.options) {
+                    if (option.value && option.value !== 'none') {
+                        const optionText = option.textContent.toLowerCase();
+                        if (optionText.includes(portalAName) || portalAName.includes(optionText.split(' ')[0])) {
+                            select.value = option.value;
+                            break;
+                        }
+                    }
+                }
+            });
+        }
+
+        function saveMatching() {
+            const selects = document.querySelectorAll('.object-select');
+            objectMatching = {};
+            
+            selects.forEach(select => {
+                const portalAId = select.name.replace('match_', '');
+                const portalBId = select.value;
+                
+                if (portalBId && portalBId !== 'none') {
+                    objectMatching[portalAId] = portalBId;
+                }
+            });
+
+            // Show matched objects for comparison
+            displayMatchedObjects();
+        }
+
+        function displayMatchedObjects() {
+            const matchedSection = document.getElementById('matchedObjectsSection');
+            const grid = document.getElementById('matchedObjectsGrid');
+            
+            grid.innerHTML = '';
+            
+            Object.keys(objectMatching).forEach(portalAId => {
+                const portalBId = objectMatching[portalAId];
+                
+                // Find the display names
+                const portalARow = document.querySelector(`select[name="match_${portalAId}"]`).closest('.object-match-row');
+                const portalAName = portalARow.querySelector('.portal-a-object strong').textContent;
+                
+                const card = document.createElement('a');
+                card.href = '#';
+                card.className = 'object-card';
+                card.innerHTML = `
+                    <div>
+                        🔧 ${portalAName}
+                    </div>
+                `;
+                
+                card.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    navigateToCustomObjectComparison(portalAId, portalBId);
+                });
+                
+                grid.appendChild(card);
+            });
+
+            if (Object.keys(objectMatching).length > 0) {
+                matchedSection.style.display = 'block';
+            }
+        }
+
+        function navigateToCustomObjectComparison(portalAId, portalBId) {
+            window.location.href = `/compare-custom/${SESSION_ID}/${portalAId}/${portalBId}`;
+        }
+    </script>
+</body>
+</html>

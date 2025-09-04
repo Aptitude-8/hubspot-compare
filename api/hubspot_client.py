@@ -85,10 +85,22 @@ class HubSpotClient:
             schemas_data = response.json()
             
             if "results" in schemas_data:
+                logger.info(f"Found {len(schemas_data['results'])} schemas total")
                 for schema in schemas_data["results"]:
-                    if not schema.get("fullyQualifiedName", "").startswith("p_"):
+                    logger.info(f"Schema: {schema.get('name')} - fullyQualifiedName: {schema.get('fullyQualifiedName')} - objectTypeId: {schema.get('objectTypeId')}")
+                    
+                    fqn = schema.get("fullyQualifiedName", "")
+                    object_type_id = schema.get("objectTypeId", "")
+                    
+                    # Custom objects have objectTypeId starting with "2-" and fullyQualifiedName starting with "p"
+                    is_custom = object_type_id.startswith("2-") and fqn.startswith("p")
+                    logger.info(f"Checking schema: objectTypeId='{object_type_id}', fullyQualifiedName='{fqn}', is_custom={is_custom}")
+                    
+                    if not is_custom:
+                        logger.info(f"Skipping schema {schema.get('name')} - not a custom object")
                         continue
                     
+                    logger.info(f"Adding custom object: {schema['name']} (ID: {schema['objectTypeId']})")
                     custom_objects.append(ObjectInfo(
                         name=schema["name"],
                         objectTypeId=schema["objectTypeId"],
