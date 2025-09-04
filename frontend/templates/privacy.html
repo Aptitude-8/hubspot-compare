@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy & Security - HubSpot Property Comparison Tool</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>�� Privacy & Security</h1>
+            <p>Understanding how your data is handled in the HubSpot Property Comparison Tool</p>
+        </header>
+
+        <main class="main-content">
+            <div class="privacy-content">
+                <div class="privacy-section">
+                    <h2>🔑 Token Storage & Security</h2>
+                    <div class="info-box">
+                        <h3>What We Store</h3>
+                        <ul>
+                            <li><strong>HubSpot Private App Tokens</strong> - Temporarily stored in server memory</li>
+                            <li><strong>Portal Names</strong> - The friendly names you assign to each portal</li>
+                            <li><strong>Session ID</strong> - A unique identifier for your comparison session</li>
+                            <li><strong>Cached Property Data</strong> - Property schemas and metadata (not actual contact/company data)</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="info-box">
+                        <h3>What We DON'T Store</h3>
+                        <ul>
+                            <li><strong>No Contact Data</strong> - We never access or store actual contact, company, or deal records</li>
+                            <li><strong>No Personal Information</strong> - No names, emails, or other personal data</li>
+                            <li><strong>No Persistent Storage</strong> - Nothing is saved to disk or databases</li>
+                            <li><strong>No Logs</strong> - Tokens are never written to log files</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="privacy-section">
+                    <h2>⏰ Data Retention & Cleanup</h2>
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-marker">1</div>
+                            <div class="timeline-content">
+                                <h4>Session Creation</h4>
+                                <p>When you validate tokens, a session is created with a unique ID. Your tokens are stored in server memory only.</p>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-marker">2</div>
+                            <div class="timeline-content">
+                                <h4>Active Usage (1 Hour)</h4>
+                                <p>Your session remains active for 1 hour. During this time, property data is cached to improve performance.</p>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-marker">3</div>
+                            <div class="timeline-content">
+                                <h4>Session Expiration</h4>
+                                <p>After 1 hour of inactivity, your session automatically expires and all data is permanently deleted.</p>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-marker">4</div>
+                            <div class="timeline-content">
+                                <h4>Automatic Cleanup</h4>
+                                <p>Every 5 minutes, the server runs a cleanup process to remove expired sessions and free memory.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="privacy-section">
+                    <h2>��️ Security Measures</h2>
+                    <div class="security-grid">
+                        <div class="security-item">
+                            <h3>�� HTTPS Encryption</h4>
+                            <p>All data transmission is encrypted using HTTPS in production.</p>
+                        </div>
+                        <div class="security-item">
+                            <h3>💾 Memory-Only Storage</h4>
+                            <p>No data is written to disk or persistent storage systems.</p>
+                        </div>
+                        <div class="security-item">
+                            <h3>🕐 Automatic Expiration</h4>
+                            <p>Sessions automatically expire after 1 hour, ensuring data doesn't persist.</p>
+                        </div>
+                        <div class="security-item">
+                            <h3>🚫 No Logging</h4>
+                            <p>Tokens and sensitive data are never written to log files.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="privacy-section">
+                    <h2>📊 What Data We Access</h2>
+                    <div class="data-types">
+                        <div class="data-type">
+                            <h3>✅ Property Schemas Only</h3>
+                            <p>We only access property definitions, types, options, and validation rules - not the actual data values.</p>
+                        </div>
+                        <div class="data-type">
+                            <h3>✅ Object Metadata</h3>
+                            <p>We access object type information and association configurations for comparison purposes.</p>
+                        </div>
+                        <div class="data-type">
+                            <h3>❌ No Record Data</h3>
+                            <p>We never access actual contact records, company records, deals, or any other data records.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="privacy-section">
+                    <h2>�� Caching Details</h2>
+                    <div class="cache-info">
+                        <h3>What Gets Cached</h3>
+                        <ul>
+                            <li><strong>Property Schemas</strong> - Cached for 15 minutes to improve performance</li>
+                            <li><strong>Object Types</strong> - Cached to reduce API calls</li>
+                            <li><strong>Association Configurations</strong> - Cached for comparison efficiency</li>
+                        </ul>
+                        
+                        <h3>Cache Management</h3>
+                        <ul>
+                            <li><strong>Automatic Refresh</strong> - You can manually refresh cached data anytime</li>
+                            <li><strong>Session-Based</strong> - Cache is tied to your session and deleted when session expires</li>
+                            <li><strong>Memory-Only</strong> - Cache exists only in server memory, not on disk</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="privacy-section">
+                    <h2>⚠️ Important Disclaimer</h2>
+                    <div class="disclaimer-info">
+                        <p><strong>Use at your own risk.</strong> We built this tool for the community and find it helpful for comparing HubSpot portals, but we cannot guarantee absolute security for all use cases.</p>
+                        
+                        <div class="recommendation-box">
+                            <h3>🔒 For Security-Conscious Clients</h3>
+                            <p>If you're working with security-sensitive data or have strict compliance requirements, we strongly recommend:</p>
+                            <ul>
+                                <li><strong>Clone the repository</strong> and run the tool locally on your own infrastructure</li>
+                                <li><strong>Review the source code</strong> to understand exactly how data is handled</li>
+                                <li><strong>Deploy on your own servers</strong> where you have full control over the environment</li>
+                                <li><strong>Modify the code</strong> as needed to meet your specific security requirements</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="github-info">
+                            <p>Ready to run locally? Check out the repository:</p>
+                            <a href="https://github.com/aptitude-8/hubspot-compare" target="_blank" rel="noopener" class="github-link">
+                                <span class="github-icon"></span> View on GitHub
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="back-to-app">
+                    <a href="/" class="btn btn-primary">← Back to Application</a>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

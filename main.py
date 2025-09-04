@@ -179,14 +179,6 @@ async def get_objects(session_id: str):
             "portal_b": objects_b
         }
         
-        # Debug logging for custom objects
-        logger.info(f"Portal A custom objects count: {len(objects_a.get('custom', []))}")
-        logger.info(f"Portal B custom objects count: {len(objects_b.get('custom', []))}")
-        for obj in objects_a.get('custom', []):
-            logger.info(f"Portal A custom object: {obj.name} (ID: {obj.objectTypeId})")
-        for obj in objects_b.get('custom', []):
-            logger.info(f"Portal B custom object: {obj.name} (ID: {obj.objectTypeId})")
-        
         # Update cache
         session["cache"]["objects"] = {
             "data": result,
@@ -545,6 +537,11 @@ async def refresh_associations_cache(session_id: str):
     except Exception as e:
         logger.error(f"Failed to refresh associations cache: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to refresh associations cache: {str(e)}")
+
+@app.get("/privacy", response_class=HTMLResponse)
+async def privacy_page(request: Request):
+    """Privacy and security information page"""
+    return templates.TemplateResponse("privacy.html", {"request": request})
 
 if __name__ == "__main__":
     import uvicorn

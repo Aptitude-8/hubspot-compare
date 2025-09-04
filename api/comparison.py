@@ -144,9 +144,6 @@ class PropertyComparer:
         opts_a_dict = {opt.value: opt for opt in options_a} if options_a else {}
         opts_b_dict = {opt.value: opt for opt in options_b} if options_b else {}
         
-        logger.info(f"Options A keys: {list(opts_a_dict.keys())[:5]}...")  # First 5 keys
-        logger.info(f"Options B keys: {list(opts_b_dict.keys())[:5]}...")  # First 5 keys
-        
         all_option_values = set(opts_a_dict.keys()) | set(opts_b_dict.keys())
         
         # Check for options that exist in both portals
@@ -157,7 +154,6 @@ class PropertyComparer:
             if opt_a and opt_b:
                 # Compare option properties
                 if opt_a.label != opt_b.label:
-                    logger.info(f"Option {opt_value} label diff: '{opt_a.label}' vs '{opt_b.label}'")
                     differences.append(PropertyDiff(
                         field_name=f"Option '{opt_value}' Label",
                         portal_a_value=opt_a.label,
@@ -169,7 +165,6 @@ class PropertyComparer:
                 desc_a = opt_a.description or ""
                 desc_b = opt_b.description or ""
                 if desc_a != desc_b:
-                    logger.info(f"Option {opt_value} description diff: '{opt_a.description}' vs '{opt_b.description}'")
                     differences.append(PropertyDiff(
                         field_name=f"Option '{opt_value}' Description",
                         portal_a_value=opt_a.description,
@@ -178,7 +173,6 @@ class PropertyComparer:
                     ))
                 
                 if opt_a.hidden != opt_b.hidden:
-                    logger.info(f"Option {opt_value} hidden diff: '{opt_a.hidden}' vs '{opt_b.hidden}'")
                     differences.append(PropertyDiff(
                         field_name=f"Option '{opt_value}' Hidden",
                         portal_a_value=opt_a.hidden,
@@ -187,7 +181,6 @@ class PropertyComparer:
                     ))
                 
                 if opt_a.displayOrder != opt_b.displayOrder:
-                    logger.info(f"Option {opt_value} displayOrder diff: '{opt_a.displayOrder}' vs '{opt_b.displayOrder}'")
                     differences.append(PropertyDiff(
                         field_name=f"Option '{opt_value}' Display Order",
                         portal_a_value=opt_a.displayOrder,
@@ -412,21 +405,12 @@ class PropertyComparer:
     
     def compare_associations(self, associations_a: List[AssociationConfiguration], associations_b: List[AssociationConfiguration], objects_a: List = None, objects_b: List = None) -> AssociationComparisonResult:
         """Compare associations between two portals and return detailed comparison results"""
-        
-        logger.info(f"=== ASSOCIATIONS COMPARISON DEBUG ===")
-        logger.info(f"Portal A associations count: {len(associations_a)}")
-        logger.info(f"Portal B associations count: {len(associations_b)}")
-        
-        if associations_a:
-            logger.info(f"Portal A first few labels: {[assoc.label for assoc in associations_a[:5]]}")
-        if associations_b:
-            logger.info(f"Portal B first few labels: {[assoc.label for assoc in associations_b[:5]]}")
+    
         
         # Build objects mapping for intelligent custom object matching
         objects_mapping = {}
         if objects_a and objects_b:
             objects_mapping = self._build_objects_mapping(objects_a, objects_b)
-            logger.info(f"Built objects mapping: {objects_mapping}")
         
         # Create lookup dictionaries using smart keys that handle custom objects and unlabeled associations
         assocs_a_dict = {self._create_association_key(assoc, objects_mapping): assoc for assoc in associations_a}
@@ -434,8 +418,6 @@ class PropertyComparer:
         
         # Get all unique association keys
         all_association_keys = set(assocs_a_dict.keys()) | set(assocs_b_dict.keys())
-        logger.info(f"Total unique association keys: {len(all_association_keys)}")
-        logger.info(f"First 10 keys: {list(all_association_keys)[:10]}...")
         
         comparisons = []
         counters = {
@@ -486,11 +468,6 @@ class PropertyComparer:
             only_in_b_count=counters["only_in_b"],
             comparisons=comparisons
         )
-        
-        logger.info(f"=== COMPARISON RESULT ===")
-        logger.info(f"Total comparisons: {len(comparisons)}")
-        logger.info(f"Identical: {counters['identical']}, Different: {counters['different']}")
-        logger.info(f"Only in A: {counters['only_in_a']}, Only in B: {counters['only_in_b']}")
         
         return result
     
