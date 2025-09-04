@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Property-to-Property Comparison</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🔗 Property-to-Property Comparison</h1>
+            <p>Compare specific properties across objects and portals</p>
+            <div class="navigation">
+                <a href="/?session_id={{ session_id }}" class="btn btn-secondary">← Back to Home</a>
+            </div>
+        </header>
+
+        <main class="property-selection-content">
+            <div class="selection-section">
+                <h2>Select Properties to Compare</h2>
+                <p>Choose any two properties from any objects to compare their configurations.</p>
+                
+                <div class="property-selectors">
+                    <div class="property-selector">
+                        <h3>Source Property</h3>
+                        <div class="selector-group">
+                            <label>Portal:</label>
+                            <select id="sourcePortal" class="portal-select">
+                                <option value="portal_a">{{ portal_a_name }}</option>
+                                <option value="portal_b">{{ portal_b_name }}</option>
+                            </select>
+                        </div>
+                        <div class="selector-group">
+                            <label>Object Type:</label>
+                            <select id="sourceObject" class="object-select">
+                                <option value="">-- Select Object --</option>
+                            </select>
+                        </div>
+                        <div class="selector-group">
+                            <label>Property:</label>
+                            <select id="sourceProperty" class="property-select" disabled>
+                                <option value="">-- Select Property --</option>
+                            </select>
+                        </div>
+                        <div class="property-preview" id="sourcePreview"></div>
+                    </div>
+                    
+                    <div class="comparison-arrow">
+                        <div class="arrow">⚡</div>
+                        <div class="vs-text">VS</div>
+                    </div>
+                    
+                    <div class="property-selector">
+                        <h3>Target Property</h3>
+                        <div class="selector-group">
+                            <label>Portal:</label>
+                            <select id="targetPortal" class="portal-select">
+                                <option value="portal_a">{{ portal_a_name }}</option>
+                                <option value="portal_b">{{ portal_b_name }}</option>
+                            </select>
+                        </div>
+                        <div class="selector-group">
+                            <label>Object Type:</label>
+                            <select id="targetObject" class="object-select">
+                                <option value="">-- Select Object --</option>
+                            </select>
+                        </div>
+                        <div class="selector-group">
+                            <label>Property:</label>
+                            <select id="targetProperty" class="property-select" disabled>
+                                <option value="">-- Select Property --</option>
+                            </select>
+                        </div>
+                        <div class="property-preview" id="targetPreview"></div>
+                    </div>
+                </div>
+                
+                <div class="comparison-actions">
+                    <button type="button" class="btn btn-primary" id="compareProperties" disabled>
+                        Compare Properties
+                    </button>
+                </div>
+            </div>
+
+            <div class="loading" id="loadingIndicator" style="display: none;">
+                <div class="spinner"></div>
+                <p>Loading properties...</p>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const SESSION_ID = '{{ session_id }}';
+        const PORTAL_A_NAME = '{{ portal_a_name }}';
+        const PORTAL_B_NAME = '{{ portal_b_name }}';
+        
+        let objectsData = null;
+        let propertiesCache = {};
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadObjectsData();
+            setupEventListeners();
+        });
+
+        function setupEventListeners() {
+            document.getElementById('sourcePortal').addEventListener('change', () => updateObjectList('source'));
+            document.getElementById('sourceObject').addEventListener('change', () => updatePropertyList('source'));
+            document.getElementById('sourceProperty').addEventListener('change', () => updatePropertyPreview('source'));
+            
+            document.getElementById('targetPortal').addEventListener('change', () => updateObjectList('target'));
+            document.getElementById('targetObject').addEventListener('change', () => updatePropertyList('target'));
+            document.getElementById('targetProperty').addEventListener('change', () => updatePropertyPreview('target'));
+            
+            document.getElementById('compareProperties').addEventListener('click', performComparison);
+        }
+
+        async function loadObjectsData() {
+            try {
+                const response = await fetch(`/objects/${SESSION_ID}`);
+                objectsData = await response.json();
+                
+                // Populate initial object lists
+                updateObjectList('source');
+                updateObjectList('target');
+                
+            } catch (error) {
+                console.error('Failed to load objects:', error);
+                alert('Failed to load object data. Please refresh the page.');
+            }
+        }
+
+        function updateObjectList(type) {
+            const portalSelect = document.getElementById(`${type}Portal`);
+            const objectSelect = document.getElementById(`${type}Object`);
+            const propertySelect = document.getElementById(`${type}Property`);
+            
+            const selectedPortal = portalSelect.value;
+            const portalData = objectsData[selectedPortal];
+            
+            // Clear existing options
+            objectSelect.innerHTML = '<option value="">-- Select Object --</option>';
+            propertySelect.innerHTML = '<option value="">-- Select Property --</option>';
+            propertySelect.disabled = true;
+            
+            // Add standard objects
+            const standardObjects = ['contacts', 'companies', 'deals', 'tickets', 'products', 'line_items', 'quotes', 'calls', 'emails', 'meetings', 'notes', 'tasks'];
+            standardObjects.forEach(obj => {
+                const option = document.createElement('option');
+                option.value = obj;
+                option.textContent = formatObjectName(obj);
+                objectSelect.appendChild(option);
+            });
+            
+            // Add custom objects
+            if (portalData.custom && portalData.custom.length > 0) {
+                const customGroup = document.createElement('optgroup');
+                customGroup.label = 'Custom Objects';
+                portalData.custom.forEach(obj => {
+                    const option = document.createElement('option');
+                    option.value = obj.objectTypeId;
+                    option.textContent = obj.labels?.plural || obj.name;
+                    customGroup.appendChild(option);
+                });
+                objectSelect.appendChild(customGroup);
+            }
+            
+            updateCompareButtonState();
+        }
+
+        async function updatePropertyList(type) {
+            const objectSelect = document.getElementById(`${type}Object`);
+            const propertySelect = document.getElementById(`${type}Property`);
+            const portalSelect = document.getElementById(`${type}Portal`);
+            
+            const selectedObject = objectSelect.value;
+            const selectedPortal = portalSelect.value;
+            
+            propertySelect.innerHTML = '<option value="">-- Select Property --</option>';
+            
+            if (!selectedObject) {
+                propertySelect.disabled = true;
+                return;
+            }
+            
+            propertySelect.disabled = true;
+            
+            try {
+                // Check cache first
+                const cacheKey = `${selectedPortal}_${selectedObject}`;
+                if (!propertiesCache[cacheKey]) {
+                    const response = await fetch(`/properties/${SESSION_ID}/${selectedObject}`);
+                    const data = await response.json();
+                    propertiesCache[cacheKey] = data[selectedPortal];
+                }
+                
+                const properties = propertiesCache[cacheKey];
+                properties.forEach(prop => {
+                    const option = document.createElement('option');
+                    option.value = prop.name;
+                    option.textContent = `${prop.label || prop.name} (${prop.name})`;
+                    propertySelect.appendChild(option);
+                });
+                
+                propertySelect.disabled = false;
+                
+            } catch (error) {
+                console.error('Failed to load properties:', error);
+                alert(`Failed to load properties for ${selectedObject}`);
+            }
+            
+            updateCompareButtonState();
+        }
+
+        function updatePropertyPreview(type) {
+            const propertySelect = document.getElementById(`${type}Property`);
+            const preview = document.getElementById(`${type}Preview`);
+            const objectSelect = document.getElementById(`${type}Object`);
+            const portalSelect = document.getElementById(`${type}Portal`);
+            
+            const selectedProperty = propertySelect.value;
+            const selectedObject = objectSelect.value;
+            const selectedPortal = portalSelect.value;
+            
+            if (!selectedProperty || !selectedObject) {
+                preview.innerHTML = '';
+                updateCompareButtonState();
+                return;
+            }
+            
+            const cacheKey = `${selectedPortal}_${selectedObject}`;
+            const properties = propertiesCache[cacheKey];
+            const property = properties.find(p => p.name === selectedProperty);
+            
+            if (property) {
+                preview.innerHTML = `
+                    <div class="preview-card">
+                        <strong>${property.label || property.name}</strong>
+                        <div class="preview-details">
+                            <span>Type: ${property.type} (${property.fieldType})</span>
+                            <span>Group: ${property.groupName || 'N/A'}</span>
+                            ${property.required ? '<span class="required-indicator">Required</span>' : ''}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            updateCompareButtonState();
+        }
+
+        function updateCompareButtonState() {
+            const sourceProperty = document.getElementById('sourceProperty').value;
+            const targetProperty = document.getElementById('targetProperty').value;
+            const compareButton = document.getElementById('compareProperties');
+            
+            compareButton.disabled = !sourceProperty || !targetProperty;
+        }
+
+        async function performComparison() {
+            const sourcePortal = document.getElementById('sourcePortal').value;
+            const sourceObject = document.getElementById('sourceObject').value;
+            const sourceProperty = document.getElementById('sourceProperty').value;
+            
+            const targetPortal = document.getElementById('targetPortal').value;
+            const targetObject = document.getElementById('targetObject').value;
+            const targetProperty = document.getElementById('targetProperty').value;
+            
+            const url = `/compare-property/${SESSION_ID}?` + new URLSearchParams({
+                source_portal: sourcePortal,
+                source_object: sourceObject,
+                source_property: sourceProperty,
+                target_portal: targetPortal,
+                target_object: targetObject,
+                target_property: targetProperty
+            });
+            
+            window.location.href = url;
+        }
+
+        function formatObjectName(objectType) {
+            const nameMap = {
+                'contacts': 'Contacts',
+                'companies': 'Companies',
+                'deals': 'Deals',
+                'tickets': 'Tickets',
+                'products': 'Products',
+                'line_items': 'Line Items',
+                'quotes': 'Quotes',
+                'calls': 'Calls',
+                'emails': 'Emails',
+                'meetings': 'Meetings',
+                'notes': 'Notes',
+                'tasks': 'Tasks'
+            };
+            return nameMap[objectType] || objectType.charAt(0).toUpperCase() + objectType.slice(1);
+        }
+    </script>
+</body>
+</html>

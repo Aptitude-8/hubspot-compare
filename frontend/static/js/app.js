@@ -10,6 +10,8 @@ function initializeApp() {
     const tokenForm = document.getElementById('tokenForm');
     const continueSessionBtn = document.getElementById('continueSessionBtn');
     const newTokensBtn = document.getElementById('newTokensBtn');
+    const propertyComparisonBtn = document.getElementById('propertyComparisonBtn');
+    const propertyComparisonBtn2 = document.getElementById('propertyComparisonBtn2');
     const existingSessionId = document.getElementById('existingSessionId');
     
     if (tokenForm) {
@@ -29,6 +31,14 @@ function initializeApp() {
             document.getElementById('tokenSection').style.display = 'block';
             sessionId = null;
         });
+    }
+    
+    if (propertyComparisonBtn) {
+        propertyComparisonBtn.addEventListener('click', goToPropertyComparison);
+    }
+    
+    if (propertyComparisonBtn2) {
+        propertyComparisonBtn2.addEventListener('click', goToPropertyComparison);
     }
     
     // Check if we have a session ID from existing session
@@ -220,6 +230,12 @@ function formatObjectName(objectType) {
 function navigateToCustomObjectMatching() {
     if (sessionId) {
         window.location.href = `/custom-object-matching/${sessionId}`;
+    }
+}
+
+function goToPropertyComparison() {
+    if (sessionId) {
+        window.location.href = `/property-to-property/${sessionId}`;
     }
 }
 

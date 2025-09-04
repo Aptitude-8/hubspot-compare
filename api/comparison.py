@@ -276,3 +276,59 @@ class PropertyComparer:
             parts.append("Blocker")
         
         return ", ".join(parts) if parts else "Rule exists"
+    
+    def _compare_single_property_exclude_group(self, prop_a: HubSpotProperty, prop_b: HubSpotProperty) -> PropertyComparison:
+        """Compare two properties excluding property group (for property-to-property comparison)"""
+        differences = []
+        
+        # Compare basic attributes (excluding groupName)
+        fields_to_compare = [
+            ("label", "Label"),
+            ("description", "Description"),
+            ("type", "Type"),
+            ("fieldType", "Field Type"),
+            ("required", "Required"),
+            ("searchableInGlobalSearch", "Searchable in Global Search"),
+            ("hasUniqueValue", "Has Unique Value"),
+            ("hidden", "Hidden"),
+            ("displayOrder", "Display Order"),
+            ("calculated", "Calculated"),
+            ("externalOptions", "External Options"),
+            ("hubspotDefined", "HubSpot Defined"),
+            ("showCurrencySymbol", "Show Currency Symbol")
+        ]
+        
+        for field_name, display_name in fields_to_compare:
+            value_a = getattr(prop_a, field_name)
+            value_b = getattr(prop_b, field_name)
+            
+            if value_a != value_b:
+                differences.append(PropertyDiff(
+                    field_name=display_name,
+                    portal_a_value=value_a,
+                    portal_b_value=value_b,
+                    status=ComparisonStatus.DIFFERENT
+                ))
+        
+        # Compare options (for enumeration/select fields)
+        if prop_a.options or prop_b.options:
+            options_diff = self._compare_options(prop_a.options, prop_b.options)
+            if options_diff:
+                differences.extend(options_diff)
+        
+        # Compare validation rules
+        if prop_a.validationRules or prop_b.validationRules:
+            validation_diff = self._compare_validation_rules(prop_a.validationRules, prop_b.validationRules)
+            if validation_diff:
+                differences.extend(validation_diff)
+        
+        # Determine overall status
+        status = ComparisonStatus.IDENTICAL if not differences else ComparisonStatus.DIFFERENT
+        
+        return PropertyComparison(
+            property_name=f"{prop_a.name} vs {prop_b.name}",
+            status=status,
+            property_a=prop_a,
+            property_b=prop_b,
+            differences=differences
+        )

@@ -337,6 +337,93 @@ async def compare_custom_objects(request: Request, session_id: str, portal_a_id:
         logger.error(f"Failed to compare custom objects: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to compare properties: {str(e)}")
 
+@app.get("/property-to-property/{session_id}")
+async def property_to_property_selection(request: Request, session_id: str):
+    """Show property-to-property comparison selection interface"""
+    session = get_session(session_id)
+    
+    return templates.TemplateResponse("property_to_property.html", {
+        "request": request,
+        "session_id": session_id,
+        "portal_a_name": session.get("portal_a_name", "Portal A"),
+        "portal_b_name": session.get("portal_b_name", "Portal B")
+    })
+
+@app.get("/compare-property/{session_id}")
+async def compare_specific_properties(
+    request: Request, 
+    session_id: str,
+    source_portal: str,
+    source_object: str,
+    source_property: str,
+    target_portal: str,
+    target_object: str,
+    target_property: str
+):
+    """Compare two specific properties from potentially different objects/portals"""
+    try:
+        session = get_session(session_id)
+        client_a = session["client_a"]
+        client_b = session["client_b"]
+        
+        # Determine which clients to use based on portal selection
+        if source_portal == "portal_a":
+            source_client = client_a
+            source_portal_name = session.get("portal_a_name", "Portal A")
+        else:
+            source_client = client_b
+            source_portal_name = session.get("portal_b_name", "Portal B")
+            
+        if target_portal == "portal_a":
+            target_client = client_a
+            target_portal_name = session.get("portal_a_name", "Portal A")
+        else:
+            target_client = client_b
+            target_portal_name = session.get("portal_b_name", "Portal B")
+        
+        # Get properties for both objects
+        source_properties = await source_client.get_properties(source_object)
+        target_properties = await target_client.get_properties(target_object)
+        
+        # Find the specific properties
+        source_prop = next((p for p in source_properties if p.name == source_property), None)
+        target_prop = next((p for p in target_properties if p.name == target_property), None)
+        
+        if not source_prop:
+            raise HTTPException(status_code=404, detail=f"Source property '{source_property}' not found")
+        if not target_prop:
+            raise HTTPException(status_code=404, detail=f"Target property '{target_property}' not found")
+        
+        # Create a specialized comparer that excludes property group from comparison
+        comparer = PropertyComparer()
+        comparison = comparer._compare_single_property_exclude_group(source_prop, target_prop)
+        
+        # Create a mock comparison result for display
+        from api.models import ComparisonResult, ComparisonStatus
+        comparison_result = ComparisonResult(
+            object_type=f"Property Comparison: {source_portal_name}.{source_object}.{source_property} vs {target_portal_name}.{target_object}.{target_property}",
+            total_properties_a=1,
+            total_properties_b=1,
+            identical_count=1 if comparison.status == ComparisonStatus.IDENTICAL else 0,
+            different_count=1 if comparison.status == ComparisonStatus.DIFFERENT else 0,
+            only_in_a_count=0,
+            only_in_b_count=0,
+            comparisons=[comparison]
+        )
+        
+        return templates.TemplateResponse("comparison.html", {
+            "request": request,
+            "session_id": session_id,
+            "object_type": comparison_result.object_type,
+            "comparison": comparison_result,
+            "portal_a_name": source_portal_name,
+            "portal_b_name": target_portal_name
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to compare specific properties: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to compare properties: {str(e)}")
+
 @app.get("/compare/{session_id}/{object_type}", response_class=HTMLResponse)
 async def compare_properties(request: Request, session_id: str, object_type: str):
     try:
