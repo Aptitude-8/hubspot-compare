@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Property Comparison - {{ object_type }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🔍 Property Comparison: {{ object_type.title() }}</h1>
+            <div class="navigation">
+                <div class="nav-left">
+                    <a href="/?session_id={{ session_id }}" class="btn btn-secondary">← Back to Home</a>
+                    <button type="button" class="btn btn-info" id="refreshCacheBtn" title="Refresh properties from HubSpot">
+                        🔄 Refresh Data
+                    </button>
+                    <span id="cacheStatus" class="cache-status"></span>
+                </div>
+                <div class="summary-stats">
+                    <span class="stat identical">✓ {{ comparison.identical_count }} Identical</span>
+                    <span class="stat different">⚠ {{ comparison.different_count }} Different</span>
+                    <span class="stat only-a">← {{ comparison.only_in_a_count }} Only in {{ portal_a_name }}</span>
+                    <span class="stat only-b">→ {{ comparison.only_in_b_count }} Only in {{ portal_b_name }}</span>
+                </div>
+            </div>
+        </header>
+
+        <main class="comparison-content">
+            <div class="filters">
+                <div class="filter-controls">
+                    <label>
+                        <input type="checkbox" id="showIdentical" checked> Show Identical
+                    </label>
+                    <label>
+                        <input type="checkbox" id="showDifferent" checked> Show Different
+                    </label>
+                    <label>
+                        <input type="checkbox" id="showOnlyA" checked> Show Only in {{ portal_a_name }}
+                    </label>
+                    <label>
+                        <input type="checkbox" id="showOnlyB" checked> Show Only in {{ portal_b_name }}
+                    </label>
+                </div>
+                <div class="search-box">
+                    <input type="text" id="propertySearch" placeholder="Search properties...">
+                </div>
+            </div>
+
+            <div class="comparison-results" id="comparisonResults">
+                {% for comp in comparison.comparisons %}
+                <div class="property-comparison {{ comp.status.value }}" data-status="{{ comp.status.value }}">
+                    <div class="property-header">
+                        <h3 class="property-name">{{ comp.property_name }}</h3>
+                        <div class="status-badge status-{{ comp.status.value }}">
+                            {% if comp.status.value == 'identical' %}
+                                ✓ Identical
+                            {% elif comp.status.value == 'different' %}
+                                ⚠ Different
+                            {% elif comp.status.value == 'only_in_a' %}
+                                ← Only in {{ portal_a_name }}
+                            {% elif comp.status.value == 'only_in_b' %}
+                                → Only in {{ portal_b_name }}
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="property-details">
+                        <div class="portal-comparison">
+                            <div class="portal-a">
+                                <h4>{{ portal_a_name }}</h4>
+                                {% if comp.property_a %}
+                                <div class="property-info">
+                                    <div class="info-row">
+                                        <span class="label">Label:</span>
+                                        <span class="value">{{ comp.property_a.label }}</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="label">Type:</span>
+                                        <span class="value">{{ comp.property_a.type.value }} ({{ comp.property_a.fieldType.value }})</span>
+                                    </div>
+                                    {% if comp.property_a.description %}
+                                    <div class="info-row">
+                                        <span class="label">Description:</span>
+                                        <span class="value">{{ comp.property_a.description }}</span>
+                                    </div>
+                                    {% endif %}
+                                    {% if comp.property_a.groupName %}
+                                    <div class="info-row">
+                                        <span class="label">Group:</span>
+                                        <span class="value">{{ comp.property_a.groupName }}</span>
+                                    </div>
+                                    {% endif %}
+                                    {% if comp.property_a.options %}
+                                    <div class="info-row">
+                                        <span class="label">Options:</span>
+                                        <div class="options-list">
+                                            {% for option in comp.property_a.options %}
+                                            <span class="option">{{ option.label }} ({{ option.value }})</span>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    {% if comp.property_a.validationRules %}
+                                    <div class="info-row">
+                                        <span class="label">Validation Rules:</span>
+                                        <div class="validation-rules">
+                                            {% for rule in comp.property_a.validationRules %}
+                                            <div class="validation-rule">
+                                                <strong>{{ rule.name }}{% if not rule.enabled %} (Disabled){% endif %}:</strong>
+                                                {% if rule.minLength %}<span>Min: {{ rule.minLength }} chars</span>{% endif %}
+                                                {% if rule.maxLength %}<span>Max: {{ rule.maxLength }} chars</span>{% endif %}
+                                                {% if rule.min is not none %}<span>Min: {{ rule.min }}</span>{% endif %}
+                                                {% if rule.max is not none %}<span>Max: {{ rule.max }}</span>{% endif %}
+                                                {% if rule.pattern %}<span>Pattern: {{ rule.pattern }}</span>{% endif %}
+                                                {% if rule.useDefaultBlockList %}<span>Uses default block list</span>{% endif %}
+                                                {% if rule.domainBlockList %}<span>Blocked domains: {{ rule.domainBlockList | join(', ') }}</span>{% endif %}
+                                                {% if rule.message %}<small>{{ rule.message }}</small>{% endif %}
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% else %}
+                                <div class="property-missing">Property not found in {{ portal_a_name }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="portal-b">
+                                <h4>{{ portal_b_name }}</h4>
+                                {% if comp.property_b %}
+                                <div class="property-info">
+                                    <div class="info-row">
+                                        <span class="label">Label:</span>
+                                        <span class="value">{{ comp.property_b.label }}</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="label">Type:</span>
+                                        <span class="value">{{ comp.property_b.type.value }} ({{ comp.property_b.fieldType.value }})</span>
+                                    </div>
+                                    {% if comp.property_b.description %}
+                                    <div class="info-row">
+                                        <span class="label">Description:</span>
+                                        <span class="value">{{ comp.property_b.description }}</span>
+                                    </div>
+                                    {% endif %}
+                                    {% if comp.property_b.groupName %}
+                                    <div class="info-row">
+                                        <span class="label">Group:</span>
+                                        <span class="value">{{ comp.property_b.groupName }}</span>
+                                    </div>
+                                    {% endif %}
+                                    {% if comp.property_b.options %}
+                                    <div class="info-row">
+                                        <span class="label">Options:</span>
+                                        <div class="options-list">
+                                            {% for option in comp.property_b.options %}
+                                            <span class="option">{{ option.label }} ({{ option.value }})</span>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    {% if comp.property_b.validationRules %}
+                                    <div class="info-row">
+                                        <span class="label">Validation Rules:</span>
+                                        <div class="validation-rules">
+                                            {% for rule in comp.property_b.validationRules %}
+                                            <div class="validation-rule">
+                                                <strong>{{ rule.name }}{% if not rule.enabled %} (Disabled){% endif %}:</strong>
+                                                {% if rule.minLength %}<span>Min: {{ rule.minLength }} chars</span>{% endif %}
+                                                {% if rule.maxLength %}<span>Max: {{ rule.maxLength }} chars</span>{% endif %}
+                                                {% if rule.min is not none %}<span>Min: {{ rule.min }}</span>{% endif %}
+                                                {% if rule.max is not none %}<span>Max: {{ rule.max }}</span>{% endif %}
+                                                {% if rule.pattern %}<span>Pattern: {{ rule.pattern }}</span>{% endif %}
+                                                {% if rule.useDefaultBlockList %}<span>Uses default block list</span>{% endif %}
+                                                {% if rule.domainBlockList %}<span>Blocked domains: {{ rule.domainBlockList | join(', ') }}</span>{% endif %}
+                                                {% if rule.message %}<small>{{ rule.message }}</small>{% endif %}
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% else %}
+                                <div class="property-missing">Property not found in {{ portal_b_name }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        {% if comp.differences %}
+                        <div class="differences-section">
+                            <h4>Differences Found:</h4>
+                            <div class="differences-list">
+                                {% for diff in comp.differences %}
+                                <div class="difference-item">
+                                    <span class="diff-field">{{ diff.field_name }}:</span>
+                                    <div class="diff-values">
+                                        <span class="portal-a-value">{{ portal_a_name }}: {{ diff.portal_a_value if diff.portal_a_value is not none else 'N/A' }}</span>
+                                        <span class="portal-b-value">{{ portal_b_name }}: {{ diff.portal_b_value if diff.portal_b_value is not none else 'N/A' }}</span>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', path='/js/app.js') }}"></script>
+    <script>
+        const SESSION_ID = '{{ session_id }}';
+        const OBJECT_TYPE = '{{ object_type }}';
+        
+        // Initialize comparison page functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeFilters();
+            initializeSearch();
+            initializeRefresh();
+            updateCacheStatus();
+        });
+
+        function initializeFilters() {
+            const filters = ['showIdentical', 'showDifferent', 'showOnlyA', 'showOnlyB'];
+            filters.forEach(filterId => {
+                document.getElementById(filterId).addEventListener('change', applyFilters);
+            });
+        }
+
+        function initializeSearch() {
+            document.getElementById('propertySearch').addEventListener('input', applySearch);
+        }
+
+        function applyFilters() {
+            const showIdentical = document.getElementById('showIdentical').checked;
+            const showDifferent = document.getElementById('showDifferent').checked;
+            const showOnlyA = document.getElementById('showOnlyA').checked;
+            const showOnlyB = document.getElementById('showOnlyB').checked;
+
+            const comparisons = document.querySelectorAll('.property-comparison');
+            comparisons.forEach(comp => {
+                const status = comp.dataset.status;
+                let show = false;
+                
+                if (status === 'identical' && showIdentical) show = true;
+                if (status === 'different' && showDifferent) show = true;
+                if (status === 'only_in_a' && showOnlyA) show = true;
+                if (status === 'only_in_b' && showOnlyB) show = true;
+                
+                comp.style.display = show ? 'block' : 'none';
+            });
+        }
+
+        function applySearch() {
+            const searchTerm = document.getElementById('propertySearch').value.toLowerCase();
+            const comparisons = document.querySelectorAll('.property-comparison');
+            
+            comparisons.forEach(comp => {
+                const propertyName = comp.querySelector('.property-name').textContent.toLowerCase();
+                const matches = propertyName.includes(searchTerm);
+                
+                if (matches) {
+                    comp.classList.remove('hidden-by-search');
+                } else {
+                    comp.classList.add('hidden-by-search');
+                }
+            });
+        }
+
+        function initializeRefresh() {
+            const refreshBtn = document.getElementById('refreshCacheBtn');
+            if (refreshBtn) {
+                refreshBtn.addEventListener('click', refreshPropertyData);
+            }
+        }
+
+        async function refreshPropertyData() {
+            const refreshBtn = document.getElementById('refreshCacheBtn');
+            const originalText = refreshBtn.textContent;
+            
+            try {
+                refreshBtn.disabled = true;
+                refreshBtn.textContent = '🔄 Refreshing...';
+                
+                // Clear cache for this object type
+                const response = await fetch(`/refresh-cache/${SESSION_ID}?object_type=${OBJECT_TYPE}`, {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    // Reload the page to get fresh data
+                    window.location.reload();
+                } else {
+                    throw new Error('Failed to refresh cache');
+                }
+            } catch (error) {
+                console.error('Refresh failed:', error);
+                alert('Failed to refresh data. Please try again.');
+            } finally {
+                refreshBtn.disabled = false;
+                refreshBtn.textContent = originalText;
+            }
+        }
+
+        async function updateCacheStatus() {
+            try {
+                const response = await fetch(`/cache-status/${SESSION_ID}`);
+                const status = await response.json();
+                
+                const cacheStatusEl = document.getElementById('cacheStatus');
+                if (cacheStatusEl && status.properties[OBJECT_TYPE]) {
+                    const objStatus = status.properties[OBJECT_TYPE];
+                    const ageMinutes = Math.floor(objStatus.age_seconds / 60);
+                    
+                    if (objStatus.valid) {
+                        cacheStatusEl.textContent = `📦 Cached (${ageMinutes}m ago)`;
+                        cacheStatusEl.className = 'cache-status cached';
+                    } else {
+                        cacheStatusEl.textContent = '⚠️ Cache expired';
+                        cacheStatusEl.className = 'cache-status expired';
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to get cache status:', error);
+            }
+        }
+    </script>
+</body>
+</html>

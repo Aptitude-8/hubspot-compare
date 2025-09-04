@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HubSpot Property Comparison Tool</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🔍 HubSpot Property Comparison Tool</h1>
+            <p>Compare properties between two HubSpot portals</p>
+        </header>
+
+        <main class="main-content">
+            <div class="auth-section">
+                {% if existing_session %}
+                <div class="existing-session">
+                    <h2>✅ Active Session Found</h2>
+                    <p>You have an active session comparing <strong>{{ existing_session.portal_a_name }}</strong> vs <strong>{{ existing_session.portal_b_name }}</strong>. You can continue comparing properties or validate new tokens.</p>
+                    <div class="session-actions">
+                        <button type="button" class="btn btn-primary" id="continueSessionBtn">
+                            Continue with Current Session
+                        </button>
+                        <button type="button" class="btn btn-secondary" id="newTokensBtn">
+                            Use Different Tokens
+                        </button>
+                    </div>
+                    <input type="hidden" id="existingSessionId" value="{{ session_id }}">
+                </div>
+                {% endif %}
+                
+                <div id="tokenSection" {% if existing_session %}style="display: none;"{% endif %}>
+                    <h2>Portal Authentication</h2>
+                    <form id="tokenForm" class="token-form">
+                        <div class="token-inputs">
+                            <div class="token-group">
+                                <label for="portalAName">Portal A Name:</label>
+                                <input 
+                                    type="text" 
+                                    id="portalAName" 
+                                    name="portal_a_name" 
+                                    placeholder="e.g., Production, Staging, Client ABC"
+                                    required
+                                >
+                                <small>Give this portal a memorable name</small>
+                                
+                                <label for="portalAToken">Portal A Private App Token:</label>
+                                <input 
+                                    type="password" 
+                                    id="portalAToken" 
+                                    name="portal_a_token" 
+                                    placeholder="pat-na1-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                                    required
+                                >
+                                <small>Enter your Portal A private app token</small>
+                            </div>
+                            
+                            <div class="token-group">
+                                <label for="portalBName">Portal B Name:</label>
+                                <input 
+                                    type="text" 
+                                    id="portalBName" 
+                                    name="portal_b_name" 
+                                    placeholder="e.g., Development, Sandbox, Client XYZ"
+                                    required
+                                >
+                                <small>Give this portal a memorable name</small>
+                                
+                                <label for="portalBToken">Portal B Private App Token:</label>
+                                <input 
+                                    type="password" 
+                                    id="portalBToken" 
+                                    name="portal_b_token" 
+                                    placeholder="pat-na1-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                                    required
+                                >
+                                <small>Enter your Portal B private app token</small>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary" id="validateBtn">
+                            Validate Tokens
+                        </button>
+                    </form>
+                </div>
+                
+                <div id="authStatus" class="status-message"></div>
+            </div>
+
+            <div id="objectSelection" class="object-section" style="display: none;">
+                <h2>Select Object Type to Compare</h2>
+                
+                <div class="object-categories">
+                    <div class="standard-objects">
+                        <h3>Standard Objects</h3>
+                        <div class="object-grid" id="standardObjects">
+                            <!-- Standard objects will be populated here -->
+                        </div>
+                    </div>
+                    
+                    <div class="custom-objects">
+                        <h3>Custom Objects</h3>
+                        <div class="object-grid" id="customObjects">
+                            <!-- Custom objects will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="loadingIndicator" class="loading" style="display: none;">
+                <div class="spinner"></div>
+                <p>Processing your request...</p>
+            </div>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', path='/js/app.js') }}"></script>
+</body>
+</html>

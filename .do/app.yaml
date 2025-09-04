@@ -1,0 +1,24 @@
+name: hubspot-compare
+services:
+- environment_slug: python
+  github:
+    branch: master
+    deploy_on_push: true
+    repo: aptitude-8/hubspot-compare
+  http_port: 8080
+  instance_count: 1
+  instance_size_slug: basic-xxs
+  name: web
+  run_command: uvicorn main:app --host 0.0.0.0 --port $PORT
+  source_dir: /
+static_sites:
+- build_command: echo "No build needed for static files"
+  environment_slug: html
+  github:
+    branch: master
+    deploy_on_push: true
+    repo: aptitude-8/hubspot-compare
+  name: static
+  output_dir: /frontend/static
+  routes:
+  - path: /static
